@@ -2370,7 +2370,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 -- Toggle Button triggers Frame open/close
-ToggleButton.MouseButton1Click.Connect(function()
+ToggleButton.MouseButton1Click:Connect(function()
     local targetVisible = not MainFrame.Visible
     if targetVisible then
         MainFrame.Size = UDim2.new(0, 0, 0, 0)
