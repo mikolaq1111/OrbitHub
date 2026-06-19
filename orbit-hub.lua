@@ -2022,7 +2022,7 @@ local function applyESP(player)
             AlwaysOnTop = true,
             Size = UDim2.new(0, 100, 0, 30),
             StudsOffset = Vector3.new(0, 3.5, 0),
-            Visible = false
+            Enabled = false
         })
 
         local tagLabel = create("TextLabel", {
@@ -2060,11 +2060,11 @@ local function applyESP(player)
                     local dist = math.round((root.Position - localRoot.Position).Magnitude)
                     tagLabel.Text = player.DisplayName .. " (" .. player.Name .. ")\n[" .. dist .. " studs]"
                     billboard.Adornee = espNameEnabled and root or nil
-                    billboard.Visible = espNameEnabled
+                    billboard.Enabled = espNameEnabled
                     billboard.Parent = ScreenGui
                 else
                     box.Visible = false
-                    billboard.Visible = false
+                    billboard.Enabled = false
                 end
             end)
         end)
