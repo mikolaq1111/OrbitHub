@@ -479,23 +479,25 @@ end
 -- =============================================================================
 -- REGISTER PAGES
 -- =============================================================================
-local HomePage = registerPage("Home", "Welcome")
-local ScriptsPage = registerPage("Scripts", "Executions")
-local FEPage = registerPage("FE Scripts", "Filtering Enabled Cheats")
-local CharacterPage = registerPage("Character", "Character Controls")
-local VisualsPage = registerPage("Visuals", "Visual Extras")
-local AutomationsPage = registerPage("Automations", "Auto Routines")
-local ServerPage = registerPage("Server", "Server Actions")
-local SettingsPage = registerPage("Settings", "Themes & Options")
+local HomePage       = registerPage("Home",      "Welcome")
+local ScriptsPage    = registerPage("Scripts",    "Executions")
+local FEPage         = registerPage("FE Scripts", "Filtering Enabled Cheats")
+local BrowsePage     = registerPage("Browse",     "API Script Browser")
+local CharacterPage  = registerPage("Character",  "Character Controls")
+local VisualsPage    = registerPage("Visuals",    "Visual Extras")
+local AutomationsPage= registerPage("Automations","Auto Routines")
+local ServerPage     = registerPage("Server",     "Server Actions")
+local SettingsPage   = registerPage("Settings",   "Themes & Options")
 
-addTabButton("Home", "🏠", 1)
-addTabButton("Scripts", "📜", 2)
-addTabButton("FE Scripts", "⚡", 3)
-addTabButton("Character", "🏃", 4)
-addTabButton("Visuals", "👁️", 5)
-addTabButton("Automations", "🤖", 6)
-addTabButton("Server", "⚙️", 7)
-addTabButton("Settings", "🛠️", 8)
+addTabButton("Home",        "🏠", 1)
+addTabButton("Scripts",     "📜", 2)
+addTabButton("FE Scripts",  "⚡", 3)
+addTabButton("Browse",      "🌐", 4)
+addTabButton("Character",   "🏃", 5)
+addTabButton("Visuals",     "👁️", 6)
+addTabButton("Automations", "🤖", 7)
+addTabButton("Server",      "⚙️", 8)
+addTabButton("Settings",    "🛠️", 9)
 
 -- Set Default Active Tab
 task.spawn(function()
@@ -739,171 +741,368 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- =============================================================================
--- SCRIPTS CATALOG DATABASE
--- =============================================================================
+-- Helper function to make secure, cross-executor HTTP requests
+local function httpGet(url)
+    local success, content = pcall(function()
+        return game:HttpGet(url)
+    end)
+    if success and content then
+        return content
+    end
+    
+    local requestMethod = syn and syn.request or request or http_request
+    if requestMethod then
+        local rSuccess, rRes = pcall(function()
+            return requestMethod({Url = url, Method = "GET"})
+        end)
+        if rSuccess and rRes and rRes.Body then
+            return rRes.Body
+        end
+    end
+    
+    error("Your executor does not support game:HttpGet or HTTP Request functions!")
+end
+
+local function runLoader(name, url)
+    local success, content = pcall(function()
+        return httpGet(url)
+    end)
+    if not success or not content then
+        error("Failed to fetch script content: " .. tostring(content or "Unknown error"))
+    end
+    
+    local func, compileErr = loadstring(content)
+    if not func then
+        error("Compilation failed: " .. tostring(compileErr))
+    end
+    
+    local execSuccess, execErr = pcall(func)
+    if not execSuccess then
+        error("Execution runtime error: " .. tostring(execErr))
+    end
+end
+
 local ScriptsData = {
     -- Universal Loaders
     {
         Name = "Infinite Yield",
         Desc = "Highly customizable admin command utility with 400+ commands.",
         Category = "Universal",
-        Execute = function()
-            loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeY/infiniteyield/master/source'))()
-        end
+        Execute = function() runLoader("Infinite Yield", "https://raw.githubusercontent.com/EdgeY/infiniteyield/master/source") end
     },
     {
         Name = "Dex Explorer V4",
         Desc = "High-tier file explorer and property viewer for debugging code.",
         Category = "Developer Tools",
-        Execute = function()
-            loadstring(game:HttpGet('https://raw.githubusercontent.com/infyiff/backup/main/dex.lua'))()
-        end
+        Execute = function() runLoader("Dex Explorer V4", "https://raw.githubusercontent.com/infyiff/backup/main/dex.lua") end
     },
     {
         Name = "SimpleSpy V3",
         Desc = "Advanced remote event and function listener with call stack logging.",
         Category = "Developer Tools",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
-        end
+        Execute = function() runLoader("SimpleSpy V3", "https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua") end
     },
     {
         Name = "CMD-X Admin",
         Desc = "Beautiful admin system featuring hundreds of unique keybind actions.",
         Category = "Universal",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/main"))()
-        end
+        Execute = function() runLoader("CMD-X Admin", "https://raw.githubusercontent.com/CMD-X/CMD-X/master/main") end
     },
     {
         Name = "Hydroxide Scanner",
         Desc = "Analyzes Upvalues, Constants, and Remote Functions on execution.",
         Category = "Developer Tools",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/yannvess/hydroxide/main/init.lua"))()
-        end
+        Execute = function() runLoader("Hydroxide Scanner", "https://raw.githubusercontent.com/yannvess/hydroxide/main/init.lua") end
     },
     {
         Name = "Turtle Spy Remotes",
         Desc = "Minimalist remote event log script that requires little resources.",
         Category = "Developer Tools",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/turtle-script/TurtleSpy/main/source.lua"))()
-        end
+        Execute = function() runLoader("Turtle Spy Remotes", "https://raw.githubusercontent.com/turtle-script/TurtleSpy/main/source.lua") end
     },
     {
         Name = "BTools (F3X System)",
         Desc = "The complete F3X Building Tools system loaded for client usage.",
         Category = "Developer Tools",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/dreadfullyy/f3x/main/loader"))()
-        end
+        Execute = function() runLoader("BTools (F3X System)", "https://raw.githubusercontent.com/dreadfullyy/f3x/main/loader") end
     },
+    {
+        Name = "Dark Dex V3",
+        Desc = "Bypassed version of Dex Explorer for games with anti-cheats.",
+        Category = "Developer Tools",
+        Execute = function() runLoader("Dark Dex V3", "https://raw.githubusercontent.com/Babyhamsta/Dex/main/Dex.lua") end
+    },
+    {
+        Name = "Nameless Admin",
+        Desc = "FE command utility with local animations and bypass scripts.",
+        Category = "Universal",
+        Execute = function() runLoader("Nameless Admin", "https://raw.githubusercontent.com/FilteringEnabled/NamelessAdmin/main/Source") end
+    },
+    {
+        Name = "Reviz Admin V2",
+        Desc = "Classic Roblox executor admin panel with player trackers.",
+        Category = "Universal",
+        Execute = function() runLoader("Reviz Admin V2", "https://raw.githubusercontent.com/elliexmln/RevizAdmin/master/RevizAdminV2") end
+    },
+    {
+        Name = "Key Stroke UI",
+        Desc = "Shows WASD and click metrics overlays on the screen corner.",
+        Category = "Developer Tools",
+        Execute = function() runLoader("Key Stroke UI", "https://raw.githubusercontent.com/GamerScripter/Roblox-Scripts/main/Key_Stroke_UI.lua") end
+    },
+    {
+        Name = "OwlHub Shooter Cheats",
+        Desc = "Aimbot, ESP, Bullet Wallbang, and FPS UI for 40+ shooters.",
+        Category = "Universal",
+        Execute = function() runLoader("OwlHub Shooter Cheats", "https://raw.githubusercontent.com/CriShoux/OwlHub/master/OwlHub.txt") end
+    },
+    
     -- Popular Games Loaders
     {
         Name = "Vape V4 Bedwars",
         Desc = "Top-tier custom script hub optimized for Bedwars client-side cheats.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/main/NewMainScript.lua", true))()
-        end
+        Execute = function() runLoader("Vape V4 Bedwars", "https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/main/NewMainScript.lua") end
+    },
+    {
+        Name = "Steve Projects Bedwars",
+        Desc = "Farming automation and movement exploits specialized for Bedwars.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Steve Projects Bedwars", "https://raw.githubusercontent.com/Steve-Project/Steve-Project/main/SteveProject.lua") end
     },
     {
         Name = "Redz Blox Fruits",
         Desc = "Premium Autofarm, Auto-Raid, Stat distribution, and Chest loader.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/REDZshop/Hub/main/RedzHubBloxFruits.lua"))()
-        end
+        Execute = function() runLoader("Redz Blox Fruits", "https://raw.githubusercontent.com/REDZshop/Hub/main/RedzHubBloxFruits.lua") end
     },
     {
         Name = "Hoho Hub Fruits",
         Desc = "A classic multi-game scripts suite optimized heavily for farming.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet('https://raw.githubusercontent.com/acsu123/HOHO_H/main/Loading_Start'))()
-        end
+        Execute = function() runLoader("Hoho Hub Fruits", "https://raw.githubusercontent.com/acsu123/HOHO_H/main/Loading_Start") end
+    },
+    {
+        Name = "W-Azure Blox Fruits",
+        Desc = "Highly customizable farm loop, level farming, and mastery boost.",
+        Category = "Popular Games",
+        Execute = function() runLoader("W-Azure Blox Fruits", "https://api.luarmor.net/files/v3/loaders/3b2169cf53ca6119d6547a1cf2f53d2d.lua") end
     },
     {
         Name = "VG Hub Adopt Me",
         Desc = "Autoclaim logins, auto-baby care, and infinite cash auto-routines.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/1201320/AdoptMe/main/AdoptMe"))()
-        end
+        Execute = function() runLoader("VG Hub Adopt Me", "https://raw.githubusercontent.com/1201320/AdoptMe/main/AdoptMe") end
     },
     {
         Name = "Banana PS99 Hub",
         Desc = "Automatic egg hatching, item magnets, server hop, and gems farmer.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/banana-hub/PS99/main/source.lua"))()
-        end
+        Execute = function() runLoader("Banana PS99 Hub", "https://raw.githubusercontent.com/banana-hub/PS99/main/source.lua") end
+    },
+    {
+        Name = "Blacktrap Pet Sim 99",
+        Desc = "Secure automation script for merchant buying, chest farm, and trade scan.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Blacktrap Pet Sim 99", "https://raw.githubusercontent.com/blacktrap-hub/PetSimulator99/main/source.lua") end
     },
     {
         Name = "Eclipse Hub MM2",
         Desc = "Automatic sheriff locator, ESP coin farm, gun grabber, and walkspeed.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/EclipseHub/MM2/main/Source.lua"))()
-        end
+        Execute = function() runLoader("Eclipse Hub MM2", "https://raw.githubusercontent.com/EclipseHub/MM2/main/Source.lua") end
+    },
+    {
+        Name = "Vynixius MM2",
+        Desc = "Aimbot, Silent Aim, ESP visualizer, sheriff tracker, and teleports.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Vynixius MM2", "https://raw.githubusercontent.com/RegularVynixius/VynixiusMM2/main/Source.lua") end
+    },
+    {
+        Name = "VG Hub MM2",
+        Desc = "Autofarm coins, ESP murderer, Sheriff tracker, and speed bypass.",
+        Category = "Popular Games",
+        Execute = function() runLoader("VG Hub MM2", "https://raw.githubusercontent.com/1201320/MM2/main/MM2") end
     },
     {
         Name = "Thunder Client Arsenal",
         Desc = "Aimbot, Silent Aim, Visual Chams, Wallbang, and FPS optimizer.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ThunderZ-Script/Arsenal/main/Arsenal.lua"))()
-        end
+        Execute = function() runLoader("Thunder Client Arsenal", "https://raw.githubusercontent.com/ThunderZ-Script/Arsenal/main/Arsenal.lua") end
+    },
+    {
+        Name = "VG Hub Arsenal",
+        Desc = "Aim assistance, esp boxes, infinite ammo, and wallhack exploits.",
+        Category = "Popular Games",
+        Execute = function() runLoader("VG Hub Arsenal", "https://raw.githubusercontent.com/1201320/Arsenal/main/Arsenal") end
     },
     {
         Name = "Redz Brookhaven",
         Desc = "Rob items, claim all houses, speed bypass, and custom player emotes.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/REDZshop/Hub/main/RedzHubBrookhaven.lua"))()
-        end
+        Execute = function() runLoader("Redz Brookhaven", "https://raw.githubusercontent.com/REDZshop/Hub/main/RedzHubBrookhaven.lua") end
+    },
+    {
+        Name = "Ice Hub Brookhaven",
+        Desc = "Access premium houses, control server actions, and farm visual items.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Ice Hub Brookhaven", "https://raw.githubusercontent.com/IceBearshop/Hub/main/Brookhaven") end
     },
     {
         Name = "Blackflow Doors Hub",
         Desc = "Automated door bypass, entity notifications, drawer looter, and fly.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/K0ny3g/Doors/main/Doors.lua"))()
-        end
+        Execute = function() runLoader("Blackflow Doors Hub", "https://raw.githubusercontent.com/K0ny3g/Doors/main/Doors.lua") end
+    },
+    {
+        Name = "MSDoors Hub",
+        Desc = "Flares notifier, auto-room pathfinder, items duplicator, and ESP.",
+        Category = "Popular Games",
+        Execute = function() runLoader("MSDoors Hub", "https://raw.githubusercontent.com/Mapple9/Doors-Saves/main/MSDoors.lua") end
     },
     {
         Name = "Cherry Slap Battles",
         Desc = "Auto-dodge gloves, slap farmer, badges claimer, and server-side fly.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/CherryHub/Cherry/main/SlapBattles.lua"))()
-        end
+        Execute = function() runLoader("Cherry Slap Battles", "https://raw.githubusercontent.com/CherryHub/Cherry/main/SlapBattles.lua") end
     },
     {
         Name = "Project Hook CW",
         Desc = "Combat Warriors automation: block helper, reach, hitboxes, and ESP.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Project-Hook/Project-Hook/main/CombatWarriors.lua"))()
-        end
+        Execute = function() runLoader("Project Hook CW", "https://raw.githubusercontent.com/Project-Hook/Project-Hook/main/CombatWarriors.lua") end
     },
     {
         Name = "Babyhamsta Evade",
         Desc = "Auto-revive players, money farm, visual entity ESP, and no-clip.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/Roblox_Scripts/main/Evade/Evade.lua"))()
-        end
+        Execute = function() runLoader("Babyhamsta Evade", "https://raw.githubusercontent.com/Babyhamsta/Roblox_Scripts/main/Evade/Evade.lua") end
     },
     {
         Name = "ToraIsMe Tower Of Hell",
         Desc = "Autoteleport to crown, invincibility, teleport tool, and speed adjustment.",
         Category = "Popular Games",
-        Execute = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ToraIsMe/ToraIsMe/main/TowerOfHell"))()
-        end
+        Execute = function() runLoader("ToraIsMe Tower Of Hell", "https://raw.githubusercontent.com/ToraIsMe/ToraIsMe/main/TowerOfHell") end
+    },
+    {
+        Name = "Premier Hub Shindo Life",
+        Desc = "Infinite spins loader, level farm, scroll locator, and custom jutsu.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Premier Hub Shindo Life", "https://raw.githubusercontent.com/PremierHub/Shindo/main/Premier") end
+    },
+    {
+        Name = "Faded Da Hood Hub",
+        Desc = "Aimlock, fly bypass, godmode, custom animation packs, and macro speed.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Faded Da Hood Hub", "https://raw.githubusercontent.com/FadedHub/DaHood/main/Faded") end
+    },
+    {
+        Name = "Kokotests Bee Swarm",
+        Desc = "Auto-dig, auto-quest completion, token magnet, and hive scheduler.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Kokotests Bee Swarm", "https://raw.githubusercontent.com/kokotests/BSS/main/source") end
+    },
+    {
+        Name = "VG Hub BIG Paintball",
+        Desc = "Autofarm level, shoot through walls, infinite ammo, and wallhack.",
+        Category = "Popular Games",
+        Execute = function() runLoader("VG Hub BIG Paintball", "https://raw.githubusercontent.com/1201320/BigPaintball/main/BigPaintball") end
+    },
+    {
+        Name = "VG Hub Jailbreak",
+        Desc = "No ragdoll, instant arrest, infinite nitros, and keycard giver.",
+        Category = "Popular Games",
+        Execute = function() runLoader("VG Hub Jailbreak", "https://raw.githubusercontent.com/1201320/Jailbreak/main/Jailbreak") end
+    },
+    {
+        Name = "Project Bullseye Jailbreak",
+        Desc = "Dynamic robbery helpers, teleport car, automatic museum bypass.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Project Bullseye Jailbreak", "https://raw.githubusercontent.com/ProjectBullseye/Jailbreak/main/Bullseye") end
+    },
+    {
+        Name = "FTF Hub Flee The Facility",
+        Desc = "Instantly hack computers, spot beast location, no escape fails.",
+        Category = "Popular Games",
+        Execute = function() runLoader("FTF Hub Flee The Facility", "https://raw.githubusercontent.com/FTFHub/FleeTheFacility/main/FTF") end
+    },
+    {
+        Name = "VG Hub KAT",
+        Desc = "Instant knives kill, sound logs, silent aimbot, and ESP trackers.",
+        Category = "Popular Games",
+        Execute = function() runLoader("VG Hub KAT", "https://raw.githubusercontent.com/1201320/KAT/main/KAT") end
+    },
+    {
+        Name = "Blade Ball Redz Hub",
+        Desc = "Auto-deflect ball loader, visual circle, block span multipliers.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Blade Ball Redz Hub", "https://raw.githubusercontent.com/REDZshop/Hub/main/BladeBall.lua") end
+    },
+    {
+        Name = "Blade Ball W-Azure",
+        Desc = "Aimbot deflect, block reach adjuster, stat booster, auto curve.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Blade Ball W-Azure", "https://api.luarmor.net/files/v3/loaders/2b17f53a478db10a30b77b1029c41d1d.lua") end
+    },
+    {
+        Name = "Speed Run 4 Autowin",
+        Desc = "Automated levels teleporter. Bypasses level checks instantly.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Speed Run 4 Autowin", "https://raw.githubusercontent.com/GamerScripter/Roblox-Scripts/main/SpeedRun4.lua") end
+    },
+    {
+        Name = "Hide and Seek Extreme ESP",
+        Desc = "Shows seekers, hides, coins location, and teleport tools.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Hide and Seek Extreme ESP", "https://raw.githubusercontent.com/GamerScripter/Roblox-Scripts/main/HideAndSeek.lua") end
+    },
+    {
+        Name = "Natural Disaster Autowin",
+        Desc = "Auto-teleports characters to designated safe zone positions.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Natural Disaster Autowin", "https://raw.githubusercontent.com/GamerScripter/Roblox-Scripts/main/NaturalDisaster.lua") end
+    },
+    {
+        Name = "Work at Pizza Place Farm",
+        Desc = "Delivers ingredients automatically and registers cashier orders.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Work at Pizza Place Farm", "https://raw.githubusercontent.com/GamerScripter/Roblox-Scripts/main/PizzaPlace.lua") end
+    },
+    {
+        Name = "VG Hub Prison Life",
+        Desc = "Weapon spawning commands, escape loops, and arrest modules.",
+        Category = "Popular Games",
+        Execute = function() runLoader("VG Hub Prison Life", "https://raw.githubusercontent.com/1201320/PrisonLife/main/PrisonLife") end
+    },
+    {
+        Name = "Vynixius Prison Life",
+        Desc = "Admin console integration, visual targets, one-tap gun loaders.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Vynixius Prison Life", "https://raw.githubusercontent.com/RegularVynixius/PrisonLife/main/Source") end
+    },
+    {
+        Name = "Build A Boat Autowin",
+        Desc = "Auto-teleports parts to the final chest reward zone instantly.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Build A Boat Autowin", "https://raw.githubusercontent.com/GamerScripter/Roblox-Scripts/main/BuildABoat.lua") end
+    },
+    {
+        Name = "Ninja Legends Autofarm",
+        Desc = "Automates attacks, double jumps, scroll buying, and chest looting.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Ninja Legends Autofarm", "https://raw.githubusercontent.com/GamerScripter/Roblox-Scripts/main/NinjaLegends.lua") end
+    },
+    {
+        Name = "Muscle Legends Autofarm",
+        Desc = "Automatic training, agility training, pets roll, and fight zone bypass.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Muscle Legends Autofarm", "https://raw.githubusercontent.com/GamerScripter/Roblox-Scripts/main/MuscleLegends.lua") end
+    },
+    {
+        Name = "Lumber Tycoon 2 Wood Copy",
+        Desc = "Duplicates wood items by exploiting character drop constraints.",
+        Category = "Popular Games",
+        Execute = function() runLoader("Lumber Tycoon 2 Wood Copy", "https://raw.githubusercontent.com/GamerScripter/Roblox-Scripts/main/LumberTycoon.lua") end
     }
 }
 
@@ -1016,7 +1215,15 @@ local function createCategoryBtn(categoryName)
     btn.MouseButton1Click:Connect(function()
         SelectedCategory = categoryName
         for name, button in pairs(CategoryButtons) do
-            button.BackgroundColor3 = (name == categoryName) and CurrentTheme.Accent or CurrentTheme.CardBg
+            button.BackgroundColor3 = (name == categoryName) and CurrentTheme.Accent or CategoryButtons[name].Parent and CurrentTheme.CardBg or Color3.fromRGB(0,0,0)
+        end
+        -- reset colors manually to ensure precision
+        for name, button in pairs(CategoryButtons) do
+            if name == categoryName then
+                button.BackgroundColor3 = CurrentTheme.Accent
+            else
+                button.BackgroundColor3 = CurrentTheme.CardBg
+            end
         end
         updateScriptsDisplay()
     end)
@@ -1089,7 +1296,27 @@ local function createScriptCard(data)
     applyStroke(execBtn, CurrentTheme.Border, 1)
 
     execBtn.MouseButton1Click:Connect(function()
-        pcall(data.Execute)
+        local success, err = pcall(function()
+            data.Execute()
+        end)
+        if not success then
+            warn("[Orbit HUB] Failed to execute " .. data.Name .. ": " .. tostring(err))
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Orbit HUB Error",
+                    Text = "Failed to run " .. data.Name .. "! Warning outputted to Console (F9).",
+                    Duration = 5
+                })
+            end)
+        else
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Orbit HUB",
+                    Text = "Executed " .. data.Name .. " successfully!",
+                    Duration = 3
+                })
+            end)
+        end
     end)
 end
 
@@ -1683,6 +1910,393 @@ addToggle(FEScroller, "FE Void Fling Attack", false, function(state)
             bvel:Destroy()
             pcall(function() hrp.Velocity = Vector3.zero end)
         end)
+    end
+end)
+
+-- =============================================================================
+-- PAGE: API SCRIPT BROWSER (ScriptBlox + RbxScript APIs)
+-- =============================================================================
+
+-- ── Top bar ──────────────────────────────────────────────────────────────────
+local BrowseTopBar = create("Frame", {
+    Name = "BrowseTopBar",
+    Size = UDim2.new(1, -20, 0, 36),
+    Position = UDim2.new(0, 10, 0, 8),
+    BackgroundColor3 = CurrentTheme.CardBg,
+    BorderSizePixel = 0,
+    Parent = BrowsePage
+})
+applyCorner(BrowseTopBar, 6)
+applyStroke(BrowseTopBar, CurrentTheme.Border, 1)
+
+local BrowseSearchBox = create("TextBox", {
+    Name = "BrowseSearch",
+    Size = UDim2.new(0.58, -8, 1, 0),
+    Position = UDim2.new(0, 8, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "",
+    PlaceholderText = "Search scripts online…",
+    TextColor3 = CurrentTheme.Text,
+    PlaceholderColor3 = CurrentTheme.TextMuted,
+    TextSize = 12,
+    Font = Enum.Font.SourceSansBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ClearTextOnFocus = false,
+    Parent = BrowseTopBar
+})
+
+-- API source selector
+local BrowseApiBar = create("Frame", {
+    Name = "ApiBar",
+    Size = UDim2.new(0.42, -8, 1, -8),
+    Position = UDim2.new(0.58, 4, 0, 4),
+    BackgroundTransparency = 1,
+    Parent = BrowseTopBar
+})
+create("UIListLayout", {
+    FillDirection = Enum.FillDirection.Horizontal,
+    SortOrder = Enum.SortOrder.LayoutOrder,
+    Padding = UDim.new(0, 4),
+    VerticalAlignment = Enum.VerticalAlignment.Center,
+    Parent = BrowseApiBar
+})
+
+local APIS = {
+    { Name = "ScriptBlox", Id = "scriptblox" },
+    { Name = "RbxScript",  Id = "rbxscript"  },
+}
+local selectedApi = "scriptblox"
+local apiButtons  = {}
+
+for _, api in ipairs(APIS) do
+    local btn = create("TextButton", {
+        Size = UDim2.new(0, 72, 1, 0),
+        BackgroundColor3 = (api.Id == selectedApi) and CurrentTheme.Accent or CurrentTheme.CardBg,
+        Text = api.Name,
+        TextColor3 = CurrentTheme.Text,
+        TextSize = 10,
+        Font = Enum.Font.SourceSansBold,
+        AutoButtonColor = false,
+        LayoutOrder = _,
+        Parent = BrowseApiBar
+    })
+    applyCorner(btn, 4)
+    applyStroke(btn, CurrentTheme.Border, 1)
+    apiButtons[api.Id] = btn
+    btn.MouseButton1Click:Connect(function()
+        selectedApi = api.Id
+        for id, b in pairs(apiButtons) do
+            b.BackgroundColor3 = (id == selectedApi) and CurrentTheme.Accent or CurrentTheme.CardBg
+        end
+    end)
+end
+
+-- Status / page label
+local BrowseStatus = create("TextLabel", {
+    Name = "Status",
+    Size = UDim2.new(1, -20, 0, 18),
+    Position = UDim2.new(0, 10, 0, 48),
+    BackgroundTransparency = 1,
+    Text = "Enter a query and press Search. Results stream in from the live API.",
+    TextColor3 = CurrentTheme.TextMuted,
+    TextSize = 10,
+    Font = Enum.Font.SourceSans,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    Parent = BrowsePage
+})
+
+-- Search button
+local BrowseSearchBtn = create("TextButton", {
+    Name = "SearchBtn",
+    Size = UDim2.new(0, 0, 0, 36),   -- width set below after layout
+    Position = UDim2.new(1, -10, 0, 8),
+    AnchorPoint = Vector2.new(1, 0),
+    BackgroundColor3 = CurrentTheme.Accent,
+    Text = "🔍  Search",
+    TextColor3 = Color3.new(1, 1, 1),
+    TextSize = 12,
+    Font = Enum.Font.SourceSansBold,
+    AutoButtonColor = false,
+    Parent = BrowsePage
+})
+BrowseSearchBtn.Size = UDim2.new(0, 88, 0, 36)
+applyCorner(BrowseSearchBtn, 6)
+applyGradient(BrowseSearchBtn, CurrentTheme.AccentGradient)
+
+-- Reposition top bar to leave room for search button
+BrowseTopBar.Size   = UDim2.new(1, -120, 0, 36)
+
+-- Results scroller
+local BrowseScroller = create("ScrollingFrame", {
+    Name = "BrowseResults",
+    Size = UDim2.new(1, -20, 1, -72),
+    Position = UDim2.new(0, 10, 0, 70),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    ScrollBarThickness = 3,
+    ScrollBarImageColor3 = CurrentTheme.Accent,
+    Parent = BrowsePage
+})
+
+local BrowseGrid = create("UIGridLayout", {
+    CellSize    = UDim2.new(0.5, -5, 0, 70),
+    CellPadding = UDim2.new(0, 10, 0, 10),
+    SortOrder   = Enum.SortOrder.LayoutOrder,
+    Parent      = BrowseScroller
+})
+
+BrowseGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    BrowseScroller.CanvasSize = UDim2.new(0, 0, 0, BrowseGrid.AbsoluteContentSize.Y + 15)
+end)
+
+-- Clear old result cards
+local function clearBrowseResults()
+    for _, child in ipairs(BrowseScroller:GetChildren()) do
+        if child:IsA("Frame") then child:Destroy() end
+    end
+end
+
+-- Render a single API result card
+local function addBrowseCard(title, desc, rawScript, scriptUrl)
+    local card = create("Frame", {
+        BackgroundColor3 = CurrentTheme.CardBg,
+        BorderSizePixel  = 0,
+        Parent = BrowseScroller
+    })
+    applyCorner(card, 6)
+    applyStroke(card, CurrentTheme.Border, 1)
+
+    create("TextLabel", {
+        Name = "Title",
+        Size = UDim2.new(1, -70, 0, 20),
+        Position = UDim2.new(0, 8, 0, 5),
+        BackgroundTransparency = 1,
+        Text = title,
+        TextColor3 = CurrentTheme.Text,
+        TextSize = 12,
+        Font = Enum.Font.SourceSansBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        Parent = card
+    })
+
+    create("TextLabel", {
+        Name = "Desc",
+        Size = UDim2.new(1, -70, 0, 38),
+        Position = UDim2.new(0, 8, 0, 26),
+        BackgroundTransparency = 1,
+        Text = desc ~= "" and desc or "No description provided.",
+        TextColor3 = CurrentTheme.TextMuted,
+        TextSize = 10,
+        Font = Enum.Font.SourceSans,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        Parent = card
+    })
+
+    local runBtn = create("TextButton", {
+        Size = UDim2.new(0, 54, 0, 26),
+        Position = UDim2.new(1, -62, 0.5, -13),
+        BackgroundColor3 = CurrentTheme.Bg,
+        Text = "Run",
+        TextColor3 = CurrentTheme.Accent,
+        TextSize = 11,
+        Font = Enum.Font.SourceSansBold,
+        AutoButtonColor = false,
+        Parent = card
+    })
+    applyCorner(runBtn, 4)
+    applyStroke(runBtn, CurrentTheme.Border, 1)
+
+    runBtn.MouseButton1Click:Connect(function()
+        task.spawn(function()
+            -- If we already have the raw source, execute directly
+            if rawScript and rawScript ~= "" then
+                local fn, err = loadstring(rawScript)
+                if fn then
+                    local ok, rerr = pcall(fn)
+                    if not ok then warn("[Browse] Runtime error: " .. tostring(rerr)) end
+                else
+                    warn("[Browse] Compile error: " .. tostring(err))
+                end
+            elseif scriptUrl and scriptUrl ~= "" then
+                -- Fetch raw from URL then execute
+                local ok, body = pcall(function() return game:HttpGet(scriptUrl) end)
+                if ok and body then
+                    local fn, err = loadstring(body)
+                    if fn then
+                        local ok2, rerr = pcall(fn)
+                        if not ok2 then warn("[Browse] Runtime error: " .. tostring(rerr)) end
+                    else
+                        warn("[Browse] Compile error: " .. tostring(err))
+                    end
+                else
+                    warn("[Browse] Failed to fetch script URL: " .. tostring(body))
+                end
+            end
+
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Orbit HUB · Browse",
+                    Text = "Executed: " .. title,
+                    Duration = 3
+                })
+            end)
+        end)
+    end)
+end
+
+-- ── ScriptBlox API fetch ──────────────────────────────────────────────────────
+-- Endpoint: https://scriptblox.com/api/script/search?q=<query>&page=1&max=20
+local function fetchScriptBlox(query)
+    BrowseStatus.Text = "⏳  Fetching from ScriptBlox…"
+    clearBrowseResults()
+
+    task.spawn(function()
+        local ok, body = pcall(function()
+            return game:HttpGet(
+                "https://scriptblox.com/api/script/search?q=" ..
+                HttpService:UrlEncode(query) ..
+                "&page=1&max=20",
+                true
+            )
+        end)
+
+        if not ok or not body then
+            BrowseStatus.Text = "❌  ScriptBlox request failed. Check HTTP permissions."
+            return
+        end
+
+        local parsed, parseErr = pcall(function() return HttpService:JSONDecode(body) end)
+        if not parsed then
+            BrowseStatus.Text = "❌  Failed to parse ScriptBlox response."
+            return
+        end
+
+        -- body is the decoded table when pcall succeeds, but parseErr holds the value
+        local data = parseErr  -- pcall returns (bool, value)
+        if type(data) ~= "table" then
+            BrowseStatus.Text = "❌  Unexpected response format from ScriptBlox."
+            return
+        end
+
+        local scripts = (data.result and data.result.scripts) or data.scripts or {}
+        if #scripts == 0 then
+            BrowseStatus.Text = "🔍  No results found for \"" .. query .. "\"."
+            return
+        end
+
+        BrowseStatus.Text = "✅  " .. #scripts .. " results for \"" .. query .. "\""
+
+        for _, entry in ipairs(scripts) do
+            local title   = tostring(entry.title  or entry.name  or "Untitled")
+            local desc    = tostring(entry.description or "")
+            local rawSrc  = tostring(entry.script or "")
+            local slug    = tostring(entry.slug   or "")
+            local rawUrl  = (slug ~= "") and ("https://scriptblox.com/raw/" .. slug) or ""
+            addBrowseCard(title, desc, rawSrc, rawUrl)
+        end
+    end)
+end
+
+-- ── RbxScript API fetch ───────────────────────────────────────────────────────
+-- Endpoint: https://rbxscript.net/search?q=<query>
+local function fetchRbxScript(query)
+    BrowseStatus.Text = "⏳  Fetching from RbxScript…"
+    clearBrowseResults()
+
+    task.spawn(function()
+        local ok, body = pcall(function()
+            return game:HttpGet(
+                "https://rbxscript.net/search?q=" ..
+                HttpService:UrlEncode(query),
+                true
+            )
+        end)
+
+        if not ok or not body then
+            BrowseStatus.Text = "❌  RbxScript request failed. Check HTTP permissions."
+            return
+        end
+
+        -- RbxScript returns HTML; parse out script cards with pattern matching
+        local count = 0
+        for sTitle, sSlug in body:gmatch('<h2 class="[^"]*">([^<]+)</h2>.-href="/script/([^"]+)"') do
+            addBrowseCard(
+                sTitle:match("^%s*(.-)%s*$"),
+                "Click Run to fetch & execute from RbxScript.",
+                "",
+                "https://rbxscript.net/rawscript/" .. sSlug
+            )
+            count += 1
+            if count >= 20 then break end
+        end
+
+        if count == 0 then
+            -- fallback: try JSON endpoint
+            local ok2, body2 = pcall(function()
+                return game:HttpGet(
+                    "https://rbxscript.net/api/scripts?q=" ..
+                    HttpService:UrlEncode(query),
+                    true
+                )
+            end)
+            if ok2 and body2 then
+                local pok, parsed = pcall(function() return HttpService:JSONDecode(body2) end)
+                if pok and type(parsed) == "table" then
+                    local list = parsed.scripts or parsed.data or parsed
+                    if type(list) == "table" then
+                        for _, entry in ipairs(list) do
+                            addBrowseCard(
+                                tostring(entry.title or entry.name or "Untitled"),
+                                tostring(entry.description or ""),
+                                tostring(entry.script or ""),
+                                tostring(entry.rawUrl or entry.url or "")
+                            )
+                            count += 1
+                            if count >= 20 then break end
+                        end
+                    end
+                end
+            end
+        end
+
+        if count == 0 then
+            BrowseStatus.Text = "🔍  No results found for \"" .. query .. "\"."
+        else
+            BrowseStatus.Text = "✅  " .. count .. " results for \"" .. query .. "\""
+        end
+    end)
+end
+
+-- ── Wire the Search button ───────────────────────────────────────────────────
+BrowseSearchBtn.MouseButton1Click:Connect(function()
+    local q = BrowseSearchBox.Text
+    if q == "" or q == nil then
+        BrowseStatus.Text = "⚠️  Please enter a search query first."
+        return
+    end
+    if selectedApi == "scriptblox" then
+        fetchScriptBlox(q)
+    elseif selectedApi == "rbxscript" then
+        fetchRbxScript(q)
+    end
+end)
+
+-- Also trigger on Enter key inside the search box
+BrowseSearchBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        BrowseSearchBtn:GetPropertyChangedSignal("BackgroundColor3") -- dummy read
+        local q = BrowseSearchBox.Text
+        if q ~= "" then
+            if selectedApi == "scriptblox" then
+                fetchScriptBlox(q)
+            elseif selectedApi == "rbxscript" then
+                fetchRbxScript(q)
+            end
+        end
     end
 end)
 
@@ -2333,11 +2947,66 @@ task.spawn(function()
     end
 end)
 
+-- Preset Themes
 addAction(SetScroller, "Orbit Blue Theme", function() applyTheme("OrbitBlue") end)
 addAction(SetScroller, "Crimson Red Theme", function() applyTheme("Crimson") end)
 addAction(SetScroller, "Emerald Green Theme", function() applyTheme("Emerald") end)
 addAction(SetScroller, "Neon Purple Theme", function() applyTheme("NeonPurple") end)
 addAction(SetScroller, "Sunset Gold Theme", function() applyTheme("SunsetGold") end)
+
+-- Custom Color Sliders (live preview)
+local customAccentR, customAccentG, customAccentB = 0, 180, 255
+local customBgR, customBgG, customBgB = 16, 16, 22
+local uiTransparency = 0
+local uiBorderThickness = 1
+
+local function rebuildCustomTheme()
+    Themes["Custom"] = {
+        AccentGradient = {
+            Color3.fromRGB(customAccentR, customAccentG, customAccentB),
+            Color3.fromRGB(
+                math.clamp(customAccentR - 60, 0, 255),
+                math.clamp(customAccentG - 60, 0, 255),
+                math.clamp(customAccentB + 40, 0, 255)
+            )
+        },
+        Accent     = Color3.fromRGB(customAccentR, customAccentG, customAccentB),
+        Bg         = Color3.fromRGB(customBgR, customBgG, customBgB),
+        SidebarBg  = Color3.fromRGB(math.max(customBgR-4,0), math.max(customBgG-4,0), math.max(customBgB-6,0)),
+        CardBg     = Color3.fromRGB(math.min(customBgR+8,255), math.min(customBgG+8,255), math.min(customBgB+10,255)),
+        Text       = Color3.fromRGB(255, 255, 255),
+        TextMuted  = Color3.fromRGB(160, 160, 180),
+        Border     = Color3.fromRGB(math.min(customBgR+25,255), math.min(customBgG+25,255), math.min(customBgB+35,255)),
+    }
+    applyTheme("Custom")
+    -- Apply transparency and border thickness on top
+    MainFrame.BackgroundTransparency = uiTransparency
+    Sidebar.BackgroundTransparency = uiTransparency * 0.7
+    frameStroke.Thickness = uiBorderThickness
+    for _, s in ipairs(MainFrame:GetDescendants()) do
+        if s:IsA("UIStroke") then
+            s.Thickness = uiBorderThickness
+        end
+    end
+end
+
+addSlider(SetScroller, "Custom Accent — Red",   0, 255, 0,   function(v) customAccentR = v; rebuildCustomTheme() end)
+addSlider(SetScroller, "Custom Accent — Green", 0, 255, 180, function(v) customAccentG = v; rebuildCustomTheme() end)
+addSlider(SetScroller, "Custom Accent — Blue",  0, 255, 255, function(v) customAccentB = v; rebuildCustomTheme() end)
+
+addSlider(SetScroller, "Custom Background — Red",   0, 80, 16, function(v) customBgR = v; rebuildCustomTheme() end)
+addSlider(SetScroller, "Custom Background — Green", 0, 80, 16, function(v) customBgG = v; rebuildCustomTheme() end)
+addSlider(SetScroller, "Custom Background — Blue",  0, 80, 22, function(v) customBgB = v; rebuildCustomTheme() end)
+
+addSlider(SetScroller, "UI Transparency (%)", 0, 90, 0, function(v)
+    uiTransparency = v / 100
+    rebuildCustomTheme()
+end)
+
+addSlider(SetScroller, "Stroke Border Thickness", 0, 5, 1, function(v)
+    uiBorderThickness = v
+    rebuildCustomTheme()
+end)
 
 -- Keybind to toggle UI
 local openKey = Enum.KeyCode.RightControl
